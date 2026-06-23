@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blur Trend - Pose 2 ✌️</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Load AI dari MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Judul -->
+        <h1>Foto Gaya ✌️ Buat Nge-blur!</h1>
+        
+        <!-- Wadah Kamera & Frame -->
+        <div class="camera-wrapper">
+            <!-- Frame Lucu -->
+            <div class="cute-frame">
+                <div class="decoration top-left">✨</div>
+                <div class="decoration bottom-right">🎀</div>
+            </div>
+
+            <!-- Video Kamera -->
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+        
+        <!-- Status Teks -->
+        <p id="status">Loading AI Kamera...</p>
+    </div>
+
+    <!-- Panggil File JavaScript kita -->
+    <script src="script.js"></script>
+</body>
+</html>
