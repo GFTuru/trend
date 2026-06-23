@@ -109,9 +109,31 @@
         }
         .delay-1 { animation-delay: 1s; }
         .delay-2 { animation-delay: 2s; }
+
+        /* Animasi Ikon Musik Berputar */
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        .spin-slow {
+            animation: spin 3s linear infinite;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- AUDIO ELEMENT (Ganti src dengan nama file mp3 kamu) -->
+    <audio id="bg-music" loop>
+        <source src="lagu-trend.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- TOMBOL MUSIK FLOATING -->
+    <button id="music-btn" class="fixed top-4 right-4 sm:top-8 sm:right-8 z-50 glass-panel p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group" title="Nyalakan/Matikan Musik">
+        <span id="music-icon" class="text-2xl drop-shadow-md transition-all">🔇</span>
+        <!-- Tooltip muncul saat dihover -->
+        <span class="absolute right-16 sm:right-20 bg-white text-pink-500 text-xs sm:text-sm font-cute font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md">
+            Play Lagu! 🎶
+        </span>
+    </button>
 
     <div class="relative w-full max-w-sm mx-auto flex flex-col items-center gap-8">
         
@@ -169,6 +191,37 @@
         const statusIcon = document.getElementById('status-icon');
         const loadingScreen = document.getElementById('loading-screen');
         const polaroidText = document.getElementById('polaroid-text');
+
+        // Setup Variabel Musik
+        const bgMusic = document.getElementById('bg-music');
+        const musicBtn = document.getElementById('music-btn');
+        const musicIcon = document.getElementById('music-icon');
+        let isMusicPlaying = false;
+
+        // Logika Tombol Play/Pause Musik
+        musicBtn.addEventListener('click', () => {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                musicIcon.innerText = "🔇";
+                musicIcon.classList.remove('spin-slow');
+                isMusicPlaying = false;
+            } else {
+                bgMusic.play().then(() => {
+                    musicIcon.innerText = "🎵";
+                    musicIcon.classList.add('spin-slow');
+                    isMusicPlaying = true;
+                }).catch(error => {
+                    // Jika file mp3 tidak ditemukan atau error
+                    console.error("Gagal play musik:", error);
+                    statusText.innerText = "File lagu belum ada nih! 🎶";
+                    statusIcon.innerText = "⚠️";
+                    setTimeout(() => {
+                        statusText.innerText = "Tunjukin tanganmu ke kamera ya!";
+                        statusIcon.innerText = "👋";
+                    }, 3000);
+                });
+            }
+        });
 
         // Setup AI dari Google MediaPipe
         const hands = new Hands({
