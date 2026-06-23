@@ -3,36 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blur Trend - Pose 2 ✌️</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Aesthetic Blur Camera ✌️</title>
+    
+    <!-- Tailwind CSS untuk Styling Cepat & Rapi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Fredoka & Nunito untuk kesan "Lucu" -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Load AI dari MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        /* --- STYLING KUSTOM & LUCU --- */
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fce7f3; /* Warna dasar pink-100 */
+            /* Background pattern polkadot */
+            background-image: radial-gradient(#f9a8d4 2.5px, transparent 2.5px);
+            background-size: 32px 32px;
+            overflow-x: hidden;
+        }
+
+        .font-cute {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Desain Kartu Polaroid */
+        .polaroid-card {
+            background-color: #ffffff;
+            padding: 1rem 1rem 4rem 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px rgba(244, 114, 182, 0.2), 0 4px 10px rgba(0,0,0,0.05);
+            /* Dimiringin dikit biar estetik */
+            transform: rotate(-2deg);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .polaroid-card:hover {
+            transform: rotate(1deg) scale(1.02); /* Animasi saat dihover */
+            box-shadow: 0 25px 50px rgba(244, 114, 182, 0.3), 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        /* Wadah Kamera */
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/4; /* Proporsi kamera HP */
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background-color: #fdf2f8;
+            border: 3px dashed #fbcfe8;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mode Cermin (Mirror) */
+            transition: filter 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Class Blur Aktif */
+        .blur-active {
+            filter: blur(16px) saturate(1.3) brightness(1.1);
+        }
+
+        /* Style Kaca Transparan (Glassmorphism) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px rgba(244, 114, 182, 0.15);
+        }
+
+        /* Animasi Loading Lucu */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #fbcfe8;
+            border-bottom-color: #ec4899;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animasi Benda Melayang */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(8deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .floating {
+            animation: float 4s ease-in-out infinite;
+        }
+        .delay-1 { animation-delay: 1s; }
+        .delay-2 { animation-delay: 2s; }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
 
-    <div class="app-container">
-        <!-- Judul -->
-        <h1>Foto Gaya ✌️ Buat Nge-blur!</h1>
+    <div class="relative w-full max-w-sm mx-auto flex flex-col items-center gap-8">
         
-        <!-- Wadah Kamera & Frame -->
-        <div class="camera-wrapper">
-            <!-- Frame Lucu -->
-            <div class="cute-frame">
-                <div class="decoration top-left">✨</div>
-                <div class="decoration bottom-right">🎀</div>
-            </div>
-
-            <!-- Video Kamera -->
-            <video id="webcam" autoplay playsinline></video>
+        <!-- HEADER (Judul Web) -->
+        <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 z-10 floating">
+            <span class="text-2xl drop-shadow-md">📸</span>
+            <h1 class="text-xl font-cute font-bold text-pink-600 tracking-wide">Trend Blur ✌️</h1>
         </div>
-        
-        <!-- Status Teks -->
-        <p id="status">Loading AI Kamera...</p>
+
+        <!-- FRAME POLAROID -->
+        <div class="polaroid-card w-full z-10">
+            <!-- Ornamen Estetik (Pita, Bintang, dll) -->
+            <div class="absolute -top-6 -left-6 text-4xl floating delay-1 z-20 drop-shadow-lg">🎀</div>
+            <div class="absolute -bottom-4 -right-4 text-4xl floating delay-2 z-20 drop-shadow-lg">✨</div>
+            <div class="absolute -top-4 -right-2 text-3xl floating z-20 drop-shadow-lg opacity-80">🌸</div>
+            
+            <!-- Area Kamera -->
+            <div class="video-container">
+                <video id="webcam" autoplay playsinline></video>
+                
+                <!-- Overlay Layer (Border Transparan di dalam video) -->
+                <div class="absolute inset-2 border-2 border-white/40 rounded-lg pointer-events-none"></div>
+
+                <!-- Layar Loading AI -->
+                <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-pink-50/80 backdrop-blur-sm z-20 transition-opacity duration-300">
+                    <span class="loader mb-4 drop-shadow-md"></span>
+                    <p class="text-pink-500 font-cute font-semibold animate-pulse text-center px-4">
+                        Menyiapkan Kamera & AI...<br>
+                        <span class="text-sm font-normal text-pink-400">(Tunggu bentar ya!)</span>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Tulisan di bawah Polaroid -->
+            <div class="absolute bottom-4 right-4 transform -rotate-3 text-pink-400 font-cute text-sm opacity-80">est. 2026</div>
+            <p id="polaroid-text" class="text-center mt-5 text-gray-500 font-cute font-medium text-xl tracking-wider transition-all duration-300">
+                Me & You &lt;3
+            </p>
+        </div>
+
+        <!-- STATUS INDICATOR (Petunjuk) -->
+        <div class="glass-panel px-6 py-4 rounded-3xl flex items-center gap-4 w-full justify-center transition-all duration-300 hover:scale-105 z-10">
+            <div class="bg-white/80 p-2 rounded-full shadow-inner">
+                <span id="status-icon" class="text-2xl block transform transition-transform">👋</span>
+            </div>
+            <p id="status-text" class="text-pink-500 font-cute text-lg font-medium">Izinkan kamera dulu ya!</p>
+        </div>
+
     </div>
 
-    <!-- Panggil File JavaScript kita -->
-    <script src="script.js"></script>
+    <!-- SCRIPT LOGIKA AI & KAMERA -->
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const statusText = document.getElementById('status-text');
+        const statusIcon = document.getElementById('status-icon');
+        const loadingScreen = document.getElementById('loading-screen');
+        const polaroidText = document.getElementById('polaroid-text');
+
+        // Setup AI dari Google MediaPipe
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        // Setelan AI (Sensitivitas & Jumlah Tangan)
+        hands.setOptions({
+            maxNumHands: 1, 
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        // Logika saat AI menangkap gambar dari kamera
+        hands.onResults((results) => {
+            // Sembunyikan layar loading karena AI sudah siap
+            if (!loadingScreen.classList.contains('hidden')) {
+                loadingScreen.classList.add('opacity-0');
+                setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+            }
+
+            // Jika mendeteksi ada tangan
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Koordinat Jari (Makin kecil nilai Y = Makin ke atas / lurus)
+                const isIndexUp = landmarks[8].y < landmarks[6].y;   // Telunjuk
+                const isMiddleUp = landmarks[12].y < landmarks[10].y; // Jari Tengah
+                const isRingDown = landmarks[16].y > landmarks[14].y; // Jari Manis
+                const isPinkyDown = landmarks[20].y > landmarks[18].y; // Kelingking
+
+                // Cek Pose "2" (Telunjuk & Tengah NAIK, sisanya TURUN)
+                if (isIndexUp && isMiddleUp && isRingDown && isPinkyDown) {
+                    // JALANKAN BLUR!
+                    videoElement.classList.add('blur-active');
+                    
+                    // Update UI jadi mode "Blur Aktif"
+                    statusText.innerText = "Pose ✌️ Ketemu! Layar Nge-blur~";
+                    statusText.classList.replace('text-pink-500', 'text-pink-600');
+                    statusIcon.innerText = "✨";
+                    statusIcon.classList.add('scale-125'); // Besarin icon dikit
+                    polaroidText.innerText = "Blurred Memories ☁️";
+                    polaroidText.classList.replace('text-gray-500', 'text-pink-500');
+                } else {
+                    // MATIKAN BLUR
+                    videoElement.classList.remove('blur-active');
+                    
+                    // Update UI Tangan terlihat tapi belum pose 2
+                    statusText.innerText = "Tangan terlihat! Ayo pose ✌️";
+                    statusText.classList.replace('text-pink-600', 'text-pink-500');
+                    statusIcon.innerText = "👀";
+                    statusIcon.classList.remove('scale-125');
+                    polaroidText.innerText = "Me & You <3";
+                    polaroidText.classList.replace('text-pink-500', 'text-gray-500');
+                }
+            } else {
+                // MATIKAN BLUR (Tidak ada tangan di layar)
+                videoElement.classList.remove('blur-active');
+                
+                statusText.innerText = "Tunjukin tanganmu ke kamera ya!";
+                statusText.classList.replace('text-pink-600', 'text-pink-500');
+                statusIcon.innerText = "👋";
+                statusIcon.classList.remove('scale-125');
+                polaroidText.innerText = "Me & You <3";
+                polaroidText.classList.replace('text-pink-500', 'text-gray-500');
+            }
+        });
+
+        // Nyalakan Kamera
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                // Kirim setiap frame video ke AI MediaPipe
+                await hands.send({ image: videoElement });
+            },
+            width: 480,
+            height: 640
+        });
+
+        camera.start()
+            .then(() => {
+                statusText.innerText = "Menunggu model AI siap...";
+                statusIcon.innerText = "⏳";
+            })
+            .catch(err => {
+                // Kalau user menolak izin kamera
+                statusText.innerText = "Gagal akses! Tolong izinkan kamera ya.";
+                statusIcon.innerText = "🥺";
+                loadingScreen.innerHTML = `
+                    <div class="text-center px-6">
+                        <span class="text-4xl drop-shadow-md mb-2 block">🔒</span>
+                        <p class="text-pink-600 font-cute font-bold text-lg leading-tight">Yah, kamera ditolak!</p>
+                        <p class="text-pink-500 font-cute text-sm mt-2">Refresh halaman dan klik "Allow/Izinkan" ya.</p>
+                    </div>
+                `;
+            });
+    </script>
 </body>
 </html>
